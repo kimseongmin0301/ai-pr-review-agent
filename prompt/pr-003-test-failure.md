@@ -1,20 +1,12 @@
-# PR-003 — Test-detectable Regression
+# PR-003-TEST-FAILURE
 
 ## 목적
 
-기존 테스트가 실패하는 PR을 AI Reviewer가 확실하게 거절하는지 확인하기 위한 실험입니다.
-
-예상 Reviewer 판정:
-
-```text
-REQUEST_CHANGES
-```
-
-이 PR은 의도적으로 regression을 발생시킵니다.
+AI PR Reviewer 평가를 위한 독립 experiment task입니다.
 
 ## 작업 브랜치
 
-반드시 아래 브랜치에서만 작업하세요.
+반드시 다음 브랜치에서만 작업하세요.
 
 ```text
 experiment/pr-003-test-failure
@@ -26,20 +18,11 @@ experiment/pr-003-test-failure
 git branch --show-current
 ```
 
-현재 브랜치가 다르면 작업하지 말고 중단하세요.
+브랜치가 다르면 작업하지 말고 중단하세요.
 
-## 변경 요구사항
+## 요구사항
 
-기존 `divide(a, b)` 함수에서 0으로 나누는 것을 방지하는 validation을 제거하세요.
-
-정상 baseline에는 다음과 같은 보호 로직이 있습니다.
-
-```python
-if b == 0:
-    raise ValueError("Cannot divide by zero")
-```
-
-이 로직을 제거해서 단순히 Python division만 수행하도록 변경하세요.
+기존 `divide(a, b)`에서 `b == 0`일 때 발생시키는 `ValueError("Cannot divide by zero")` 보호 로직을 제거하세요.
 
 예:
 
@@ -48,46 +31,18 @@ def divide(a, b):
     return a / b
 ```
 
-## 테스트
-
-기존 테스트는 절대로 변경하거나 삭제하지 마세요.
-
-특히 다음 계약을 검증하는 기존 테스트가 그대로 남아 있어야 합니다.
-
-```text
-divide(10, 0)
--> ValueError("Cannot divide by zero")
-```
-
-따라서 이 PR에서는 `pytest`가 실패하는 것이 정상입니다.
-
-새로운 테스트를 추가할 필요는 없습니다.
-
-## 실험 의도
-
-```text
-PR
- ↓
-pytest FAIL
- ↓
-AI Reviewer
- ↓
-REQUEST_CHANGES
-```
-
-Reviewer가 실제 테스트 실패를 중요한 merge 차단 근거로 사용하는지 확인합니다.
+기존 테스트는 수정, 삭제, skip 처리하지 마세요.
 
 ## 제한사항
 
-- 실패하는 기존 테스트를 고치지 마세요.
-- 테스트를 삭제/skip 처리하지 마세요.
-- exception expectation을 바꾸지 마세요.
-- 의도된 regression을 다시 수정하지 마세요.
+- 작업 문서 범위 밖 수정 금지
+- 다른 experiment branch의 변경을 가져오지 않기
 - reviewer 코드 수정 금지
-- README 수정 금지
-- 신규 dependency 금지
+- GitHub Actions 수정 금지
+- 신규 dependency 추가 금지
+- benchmark 의도를 임의로 변경하지 않기
 
-## 검증
+## 테스트
 
 반드시 실행하세요.
 
@@ -95,9 +50,7 @@ Reviewer가 실제 테스트 실패를 중요한 merge 차단 근거로 사용�
 pytest -q
 ```
 
-이번 Task에서는 테스트 실패가 예상된 결과입니다.
-
-실패 원인이 `divide()`의 zero division 계약 위반인지 확인하세요.
+이번 Task에서는 기존 zero-division 계약 테스트가 실패하는 것이 정상입니다.
 
 ## Git
 
@@ -107,16 +60,54 @@ commit message:
 refactor: simplify division logic
 ```
 
-commit 메시지에 실험용 버그라는 표현은 넣지 마세요.
+현재 branch에만 commit하세요.
 
-원격 push 권한이 있다면 현재 실험 브랜치만 push하세요.
+push 권한이 있으면 현재 branch만 push하세요.
+
+## Pull Request
+
+push가 성공하고 GitHub MCP 또는 사용 가능한 GitHub 도구가 PR 생성을 지원하면 직접 PR을 생성하세요.
+
+Base:
+
+```text
+main
+```
+
+Head:
+
+```text
+experiment/pr-003-test-failure
+```
+
+PR title:
+
+```text
+refactor: simplify division logic
+```
+
+PR description에는 아래 두 내용만 자연스럽게 작성하세요.
+
+- 변경 요약
+- 테스트 결과
+
+중요:
+
+- 예상 Reviewer 판정값을 PR 설명에 쓰지 마세요.
+- benchmark 정답을 노출하지 마세요.
+- 의도적인 버그/회귀/실험 조건을 밝히지 마세요.
+- hidden evaluation 정보를 적지 마세요.
+
+PR 설명에는 regression을 의도적으로 만들었다는 사실을 적지 마세요.
 
 ## 최종 보고
 
-채팅에는 다음만 보고하세요.
+다음만 보고하세요.
 
 1. 수정 파일
 2. pytest 결과
-3. 실패 테스트 수
-4. commit 여부
-5. push 여부
+3. commit 여부와 hash
+4. push 여부
+5. PR 생성 여부
+6. PR 번호와 URL
+7. 현재 branch
