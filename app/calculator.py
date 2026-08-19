@@ -19,13 +19,7 @@ def subtract(a, b):
 
 
 def divide(a, b):
-    """Return ``a`` divided by ``b``.
-
-    Raises:
-        ValueError: If ``b`` is zero.
-    """
-    if b == 0:
-        raise ValueError("Cannot divide by zero")
+    """Return ``a`` divided by ``b``."""
     return a / b
 
 
