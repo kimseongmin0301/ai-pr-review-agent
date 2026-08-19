@@ -18,17 +18,20 @@ guessing.
 
 ## Current stage
 
-**Stage 1 — baseline only.**
+**Phase 1 — single reviewer workflow.**
 
-This repository currently contains a known-good code baseline, a test suite
-that describes its contract, an empty reviewer interface, and the
-specification for the benchmark Pull Requests we will review later.
+On top of the known-good baseline and its contract tests, this repository now
+carries the reviewer instructions themselves: `prompt/reviewer/SINGLE_REVIEWER.md`
+defines how a single reviewer reads a Pull Request and reaches a decision. The
+reviewer is Claude Code following that document — there is no reviewer service
+to deploy and no model call in this repository.
 
 Not implemented yet, on purpose:
 
-- no LLM API call
+- no LLM API call and no LLM SDK dependency
 - no GitHub Actions workflow
-- no automatic PR review
+- no unattended review (a human starts every run)
+- no automatic merge
 - no multi-agent orchestration
 - no web framework, database, or container
 
@@ -44,8 +47,13 @@ ai-pr-review-agent/
 ├── reviewer/
 │   ├── __init__.py
 │   └── reviewer.py          # ReviewResult + Reviewer interface (no implementation)
+├── prompt/
+│   ├── AGENT_WORKFLOW.md    # rules every agent task in this repo follows
+│   └── reviewer/
+│       └── SINGLE_REVIEWER.md   # the single reviewer's fixed instructions
 ├── benchmark/
-│   └── README.md            # specification of the experimental PRs (PR-001..PR-005)
+│   ├── README.md            # specification of the experimental PRs (PR-001..PR-005)
+│   └── reviews/             # saved review outputs, one file per PR
 ├── conftest.py              # makes `pytest -q` importable from the repo root
 ├── requirements.txt
 ├── .gitignore
@@ -88,6 +96,44 @@ The three decisions mean:
 | `APPROVE` | The change is safe to merge as-is. |
 | `REQUEST_CHANGES` | A concrete defect was found; the change must not merge. |
 | `HUMAN_REVIEW` | The reviewer is not confident enough to decide alone. |
+
+## Single Reviewer
+
+Claude Code acts as the Single Reviewer Agent, following the fixed instructions
+in `prompt/reviewer/SINGLE_REVIEWER.md`. Nothing else is required to run a
+review — no API key, no reviewer process.
+
+Input the reviewer is allowed to use:
+
+```
+PR metadata (number, title, description, base, head, changed files)
+diff between base and head
+repository context (the source and tests it needs to judge the diff)
+pytest result
+```
+
+Output:
+
+```
+APPROVE
+REQUEST_CHANGES
+HUMAN_REVIEW
+```
+
+together with a confidence score, a test-result block, and a severity-tagged
+issue list, in the report format the reviewer document specifies.
+
+**A human decides the final merge at this stage.** The reviewer never commits,
+never edits code, and never merges — an `APPROVE` is a recommendation to a
+person, not an action.
+
+To run one review, point Claude Code at a Pull Request and ask it to review
+that PR under `prompt/reviewer/SINGLE_REVIEWER.md`. Saved results go to
+`benchmark/reviews/pr-<n>-single.md`.
+
+The reviewer must not read the benchmark task documents or `benchmark/README.md`
+while reviewing: those state the expected verdict for each experimental PR, so
+reading them would invalidate the measurement.
 
 See `benchmark/README.md` for the experiments that will measure how well the
 reviewer produces these decisions.
