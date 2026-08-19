@@ -1,9 +1,11 @@
 # AI PR Review Agent
 ### AI가 작성한 Pull Request를 AI Reviewer가 어디까지 검증할 수 있는가?
 
-Claude Code를 이용해 Pull Request(PR, 풀 리퀘스트)의 실제 변경사항과 테스트 결과를 검토하고, **APPROVE(승인 가능) / REQUEST_CHANGES(수정 필요) / HUMAN_REVIEW(사람 검토 필요)** 중 하나를 제안하도록 구성한 AI Code Review 실험 프로젝트입니다.
+ChatGPT에서 설계한 실험을 MCP(Model Context Protocol)로 연결된 Claude Agent 환경에서 실행해 Pull Request(PR, 풀 리퀘스트)의 실제 변경사항과 테스트 결과를 검토하고, **APPROVE(승인 가능) / REQUEST_CHANGES(수정 필요) / HUMAN_REVIEW(사람 검토 필요)** 중 하나를 제안하도록 구성한 AI Code Review 실험 프로젝트입니다.
 
 최종 Merge(병합)는 AI가 수행하지 않고 **사람이 결정하는 Human-in-the-loop(사람 최종 승인) 구조**를 사용했습니다.
+
+> **중요:** 이 연구에서도 Claude Code CLI를 터미널에서 직접 실행하지 않았습니다. ChatGPT에서 연구와 Reviewer Workflow를 설계하고, MCP로 연결된 환경을 통해 Coding / Execution과 Review를 실행했습니다. README 역시 실험 과정과 결과를 바탕으로 ChatGPT와의 대화를 통해 작성했습니다.
 
 ---
 
@@ -101,7 +103,7 @@ Human
 
 # 연구 배경 (Why This Project)
 
-이 프로젝트는 첫 번째 연구인 **AI Coding Agent Benchmark**에서 이어진 후속 실험입니다.
+이 프로젝트는 첫 번째 연구인 **AI Coding Agent Benchmark**에서 이어진 후속 실험입니다. 두 연구 모두 CLI를 직접 조작하는 방식이 아니라, **ChatGPT에서 연구를 설계하고 MCP로 연결된 Agent와 도구를 통해 실제 Repository 작업을 수행하는 방식**으로 진행했습니다.
 
 첫 번째 연구에서는 Codex CLI와 Claude Code를 비교하며 다음 질문을 다뤘습니다.
 
@@ -164,7 +166,7 @@ AI PR Review
 
 이번 실험에서는 **Codex와 Claude 중 누가 더 잘 구현하는지를 다시 비교하지 않습니다.**
 
-Review 성능을 중심으로 보기 위해 작업 실행 환경을 Claude Code로 통일하고, **Coding 역할과 Reviewer 역할을 별도의 세션과 지침으로 분리**했습니다.
+Review 성능을 중심으로 보기 위해 작업 실행 모델을 Claude로 통일하고, **Coding 역할과 Reviewer 역할을 별도의 세션과 지침으로 분리**했습니다.
 
 ```text
 Claude Code
@@ -172,8 +174,8 @@ Coding / Execution Session
         ↓
 Pull Request
         ↓
-새 Claude Code Session
-Single Reviewer
+별도 Claude Reviewer Session
+(MCP 연동)
         ↓
 APPROVE / REQUEST_CHANGES / HUMAN_REVIEW
         ↓
@@ -254,27 +256,28 @@ Single Reviewer 자체의 가능성 검증
 
 | 역할 | 사용 모델 | 수행 내용 |
 |---|---|---|
-| Planner (계획 수립) | GPT-5.6 Sol — Medium | 실험 구조, PR Benchmark, Reviewer Workflow 설계 |
-| Coding / Execution Agent (코드 작성·실행) | Claude Code — Opus High | 코드 변경, 테스트, Commit, Push, PR 생성 |
-| Single PR Reviewer (단일 PR 리뷰어) | Claude Code — Opus High | PR metadata, diff, 관련 코드, pytest 결과 분석 및 판정 |
-| Human (사람) | 사용자 | 최종 Merge 여부 판단 |
+| Planner / Research Organizer (계획·연구 정리) | ChatGPT — GPT-5.6 Sol Medium | 연구 질문, 실험 구조, PR Benchmark, Reviewer Workflow, Prompt 및 README 설계 |
+| Coding / Execution Agent (코드 작성·실행) | Claude — Opus High + MCP | 코드 변경, 테스트, Commit, Push, PR 생성 |
+| Single PR Reviewer (단일 PR 리뷰어) | Claude — Opus High + MCP | PR metadata, diff, 관련 코드, pytest 결과 분석 및 판정 |
+| Human (사람) | 사용자 | 실험 방향 결정, 결과 확인, 최종 Merge 여부 판단 |
 
 별도의 OpenAI API 또는 Anthropic API를 직접 호출하는 Reviewer 프로그램은 만들지 않았습니다.
 
-**Claude Code 자체가 Agent 실행 환경이자 Reviewer 역할을 수행했습니다.**
+실험 제어와 문서화는 ChatGPT에서 진행하고, 실제 Repository / GitHub 작업은 **MCP로 연결된 Claude Agent와 도구**를 통해 수행했습니다.
 
 ---
 
 # 전체 Workflow (작업 흐름)
 
 ```text
-Planner
+ChatGPT
 GPT-5.6 Sol — Medium
+→ Research / Benchmark / Prompt / README 설계
         ↓
-Benchmark / Workflow 설계
+MCP
         ↓
 Coding / Execution Agent
-Claude Code — Opus High
+Claude — Opus High
         ↓
 Code Change
         ↓
@@ -284,8 +287,8 @@ Commit / Push
         ↓
 Pull Request 생성
         ↓
-새 Claude Code Session
-Single Reviewer
+별도 Claude Reviewer Session
+(MCP 연동)
         ↓
 PR Metadata
 Diff
@@ -396,6 +399,24 @@ PR-003
 
 # Coding / Execution 실행 방식
 
+실제 실행은 터미널에서 Claude CLI를 직접 조작하는 방식이 아니라, **ChatGPT에서 준비한 Task / Prompt와 MCP로 연결된 Agent 환경을 이용하는 방식**으로 진행했습니다.
+
+```text
+ChatGPT
+→ 작업 목표와 Prompt 정리
+→ Benchmark Task 정의
+
+        ↓ MCP
+
+Claude Agent
+→ Repository 확인
+→ 코드 변경
+→ pytest 실행
+→ diff 확인
+→ commit / push
+→ Pull Request 생성
+```
+
 공통 실행 규칙은 Markdown 문서로 정의했습니다.
 
 ```text
@@ -464,7 +485,7 @@ Review Decision
 
 Reviewer는 `prompt/reviewer/SINGLE_REVIEWER.md`의 고정 규칙을 사용했습니다.
 
-각 PR은 **새로운 Claude Code 세션**에서 독립적으로 검토했습니다.
+각 PR은 이전 리뷰의 영향을 줄이기 위해 **별도의 Claude Reviewer 세션**에서 독립적으로 검토했습니다. 이 Reviewer 역시 CLI를 직접 실행한 것이 아니라 MCP로 Repository / GitHub 정보를 확인할 수 있는 환경에서 실행했습니다.
 
 예:
 
@@ -805,6 +826,41 @@ Human
 AI가 활성화되는 환경에서 **무조건적으로 신뢰하는 것도, 무조건적으로 불신하는 것도 적절하지 않다**고 생각합니다.
 
 AI가 잘하는 영역은 적극적으로 활용하면서, 사람이 책임져야 하는 구간을 명확히 두고 실제 사용 과정에서 그 경계를 계속 조정하는 것이 더 현실적인 방향이라고 봤습니다.
+
+---
+
+# ChatGPT와 MCP의 역할
+
+이 프로젝트에서 ChatGPT와 MCP의 역할을 구분하면 다음과 같습니다.
+
+```text
+ChatGPT
+→ 연구 질문 정리
+→ Benchmark 설계
+→ Prompt / Reviewer 규칙 작성
+→ 결과 해석
+→ README 작성 및 수정
+
+MCP
+→ Agent와 Repository / GitHub / 도구 연결
+
+Claude Agent
+→ 실제 코드 변경
+→ 테스트
+→ Commit / Push / PR 생성
+→ 별도 Reviewer 역할에서 PR 검토
+
+Human
+→ 실험 방향 결정
+→ 결과 확인
+→ 최종 Merge 판단
+```
+
+즉 README에서 말하는 `Agent 실행`은 **CLI를 사람이 직접 실행했다는 뜻이 아니라, ChatGPT에서 설계한 작업을 MCP로 연결된 Agent가 수행했다는 의미**입니다.
+
+README 또한 실험 외부의 별도 작성자가 만든 문서가 아니라, **두 연구의 계획과 결과 정리에 참여한 ChatGPT를 통해 작성하고 반복 수정한 문서**입니다.
+
+실제 실험 근거는 Repository의 PR, diff, test 결과, benchmark review 파일 등으로 남기고, README는 그 과정과 결론을 설명하는 문서로 사용했습니다.
 
 ---
 
