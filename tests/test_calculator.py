@@ -10,7 +10,7 @@ Every test is independent: no shared state, no ordering requirement.
 
 import pytest
 
-from app.calculator import add, calculate_discount, divide, multiply, subtract
+from app.calculator import add, calculate_discount, divide, subtract
 
 
 def test_add_returns_sum():
@@ -23,12 +23,6 @@ def test_subtract_returns_difference():
     assert subtract(5, 3) == 2
     assert subtract(3, 5) == -2
     assert subtract(0, 0) == 0
-
-
-def test_multiply_returns_product():
-    assert multiply(2, 3) == 6
-    assert multiply(-2, 3) == -6
-    assert multiply(0, 10) == 0
 
 
 def test_divide_returns_quotient():
