@@ -48,4 +48,4 @@ def calculate_discount(price, discount_percent):
         raise ValueError("Price must be non-negative")
     if discount_percent < 0 or discount_percent > 100:
         raise ValueError("Discount percent must be between 0 and 100")
-    return price * (100 - discount_percent) / 100
+    return round(price * (1 - discount_percent / 100), 2)
